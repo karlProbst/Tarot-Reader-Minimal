@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Tarot Minimal 2005</title>
+  <style>
+    body { font-family: Arial; background: #f0f0f0; margin: 0; padding: 20px; }
+    h1 { font-size: 18px; }
+    a { margin-right: 20px; text-decoration:none; color:#000; font-weight:bold; }
+    .card { display: inline-block; margin: 10px; text-align: center; cursor: pointer; vertical-align: top; }
+    .card img { width: 100px; height: auto; border: 1px solid #000; }
+    #details { margin-top: 20px; background: #fff; padding: 10px; border: 1px solid #000; display: none; max-width: 800px; }
+    input { margin-bottom: 10px; width: 200px; padding: 2px; }
+    ul { margin: 0; padding-left: 20px; }
+    button { padding: 5px 10px; margin-bottom: 10px; }
+  </style>
+</head>
+<body>
+
+  <a href="#" onclick="showPage('cards')">Cartas</a>
+  <a href="#" onclick="showPage('shooter')">Straight Shooter</a>
+
+  <!-- PÁGINA CARTAS -->
+  <div id="cardsPage">
+    <h1>Cartas</h1>
+    <input type="text" id="search" placeholder="Pesquisar carta..." onkeyup="filterCards()">
+    <div id="cardsContainer"></div>
+  </div>
+
+  <!-- PÁGINA STRAIGHT SHOOTER -->
+  <div id="shooterPage" style="display:none">
+    <h1>Straight Shooter - 5 cartas aleatórias</h1>
+    <button onclick="drawCards()">Gerar 5 cartas</button>
+    <div id="shooterContainer"></div>
+  </div>
+
+  <!-- DETALHES DA CARTA -->
+  <div id="details"></div>
+
+  <script>
+    let tarotData;
+
+    // Carrega o JSON
+    fetch('tarot-images.json')
+      .then(res => res.json())
+      .then(data => {
+        tarotData = data.cards;
+        displayCards();
+      })
+      .catch(err => console.error("Erro ao carregar dados:", err));
+
+    // Alterna páginas
+    function showPage(page) {
+      document.getElementById('cardsPage').style.display = (page=='cards') ? '' : 'none';
+      document.getElementById('shooterPage').style.display = (page=='shooter') ? '' : 'none';
+      document.getElementById('details').style.display = 'none';
+    }
+
+    // Mostra todas as cartas na página "Cartas"
+    function displayCards() {
+      const container = document.getElementById('cardsContainer');
+      container.innerHTML = '';
+      tarotData.forEach(c => {
+        let div = document.createElement('div');
+        div.className = 'card';
+        div.innerHTML = `<img src="cards/${c.img}" alt="${c.name}"><br>${c.name}`;
+        div.onclick = () => showDetails(c);
+        container.appendChild(div);
+      });
+    }
+
+    // Filtra cartas pelo nome
+    function filterCards() {
+      const term = document.getElementById('search').value.toLowerCase();
+      const container = document.getElementById('cardsContainer');
+      container.innerHTML = '';
+      tarotData.filter(c => c.name.toLowerCase().includes(term))
+               .forEach(c => {
+                 let div = document.createElement('div');
+                 div.className = 'card';
+                 div.innerHTML = `<img src="cards/${c.img}" alt="${c.name}"><br>${c.name}`;
+                 div.onclick = () => showDetails(c);
+                 container.appendChild(div);
+               });
+    }
+
+    // Sorteia 5 cartas aleatórias
+    function drawCards() {
+      const container = document.getElementById('shooterContainer');
+      container.innerHTML = '';
+      let drawn = [];
+      while(drawn.length < 5){
+        let rand = tarotData[Math.floor(Math.random()*tarotData.length)];
+        if(!drawn.includes(rand)) drawn.push(rand);
+      }
+      drawn.forEach(c => {
+        let div = document.createElement('div');
+        div.className = 'card';
+        div.innerHTML = `<img src="cards/${c.img}" alt="${c.name}"><br>${c.name}`;
+        div.onclick = () => showDetails(c);
+        container.appendChild(div);
+      });
+    }
+
+    // Mostra todos os atributos da carta
+    function showDetails(c) {
+      const details = document.getElementById('details');
+      details.style.display = 'block';
+
+      function formatList(arr) {
+        if (!arr) return '';
+        return '<ul>' + arr.map(i => `<li>${i}</li>`).join('') + '</ul>';
+      }
+
+      function formatObject(obj) {
+        if (!obj) return '';
+        return Object.keys(obj).map(k => `<b>${k}:</b> ${formatList(obj[k])}`).join('');
+      }
+
+      details.innerHTML = `
+        <h2>${c.name} (${c.number})</h2>
+        <img src="cards/${c.img}" alt="${c.name}" style="width:150px;display:block;margin-bottom:10px;">
+        <b>Arcana:</b> ${c.arcana}<br>
+        <b>Suit:</b> ${c.suit}<br>
+        <b>Archetype:</b> ${c.Archetype}<br>
+        <b>Hebrew Alphabet:</b> ${c["Hebrew Alphabet"]}<br>
+        <b>Numerology:</b> ${c.Numerology}<br>
+        <b>Elemental:</b> ${c.Elemental}<br>
+        <b>Mythical/Spiritual:</b> ${c["Mythical/Spiritual"]}<br>
+        <b>Fortune Telling:</b> ${formatList(c.fortune_telling)}
+        <b>Keywords:</b> ${formatList(c.keywords)}
+        <b>Meanings:</b> ${formatObject(c.meanings)}
+        <b>Questions to Ask:</b> ${formatList(c["Questions to Ask"])}
+      `;
+    }
+  </script>
+
+</body>
+</html>
